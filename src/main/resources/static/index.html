@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <title>მოსწავლის ქულები</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 30px;
+            background: #eef2f3;
+        }
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .box {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            width: 350px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.08);
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 12px;
+            border-radius: 6px;
+            border: 1px solid #bbb;
+            font-size: 15px;
+        }
+        button {
+            width: 100%;
+            margin-top: 20px;
+            padding: 12px;
+            background-color: #0077cc;
+            color: white;
+            border: none;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #005fa3;
+        }
+        table {
+            margin-top: 25px;
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+        }
+        table, th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            font-size: 15px;
+        }
+        th {
+            background: #0077cc;
+            color: white;
+            text-align: left;
+        }
+        .score-high {
+            background: #c8f7c5;
+            font-weight: bold;
+        }
+        .score-mid {
+            background: #ffe5b4;
+            font-weight: bold;
+        }
+        .score-low {
+            background: #ffb3b3;
+            font-weight: bold;
+        }
+        .error {
+            margin-top: 20px;
+            color: red;
+            font-size: 16px;
+        }
+        .loading {
+            margin-top: 20px;
+            font-size: 16px;
+            color: #0077cc;
+        }
+    </style>
+</head>
+<body>
+
+<h2>მოსწავლის ქულების ნახვა</h2>
+
+<div class="box">
+    <label>პაროლი (მოსწავლის კოდი):</label>
+    <input id="password" placeholder="მაგ: KL96">
+
+    <button onclick="loadGrades()">ქულების ნახვა</button>
+</div>
+
+<div id="result"></div>
+
+<script>
+    async function loadGrades() {
+        const pw = document.getElementById("password").value.trim();
+        const result = document.getElementById("result");
+        result.innerHTML = "";
+
+        if (!pw) {
+            result.innerHTML = `<p class="error">გთხოვთ შეიყვანოთ პაროლი.</p>`;
+            return;
+        }
+
+        result.innerHTML = `<p class="loading">იტვირთება...</p>`;
+
+        const response = await fetch(`http://localhost:8080/api/grades?password=${encodeURIComponent(pw)}`);
+
+        if (!response.ok) {
+            result.innerHTML = `<p class="error">სერვერის შეცდომა (${response.status}).</p>`;
+            return;
+        }
+
+        const data = await response.json();
+
+        if (!data || !Array.isArray(data) || data.length === 0) {
+            result.innerHTML = `<p class="error">მონაცემები ვერ მოიძებნა. შეამოწმეთ პაროლი.</p>`;
+            return;
+        }
+
+
+
+        let html = "";
+
+        for (let subject of data) {
+
+            html += `
+        <div style="margin-top:25px; padding:15px; background:white; border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,0.1)">
+
+            <h3>ნაშრომი: ${subject.subject} | ნაშრომის კოდი: ${subject.subjectCode}</h3>
+            <p><b>მოსწავლის კოდი:</b> ${subject.studentCode}</p>
+
+            <table border="1" cellpadding="8" style="width:100%; margin-top:10px; border-collapse: collapse;">
+                <tr>
+                    <th>ჯამური ქულა</th>
+                    ${Object.keys(subject.tasks).map(t => `<th>${t}</th>`).join("")}
+                </tr>
+                <tr>
+                    <td>${subject.totalScore}</td>
+                    ${Object.values(subject.tasks).map(t => `<td>${t}</td>`).join("")}
+                </tr>
+            </table>
+        </div>
+    `;
+        }
+
+        result.innerHTML = html;
+
+
+    }
+</script>
+
+</body>
+</html>
