@@ -13,14 +13,14 @@ public class KomaroviApplication {
     public static void main(String[] args) {
         SpringApplication.run(KomaroviApplication.class, args);
     }
-    @Bean
-    CommandLineRunner loadExcelAtStartup(ExcelLoader loader) {
-        return args -> {
-            try {
-                loader.loadExcel("C:\\Users\\Giorgi\\IdeaProjects\\komarovi\\src\\main\\resources\\test.xlsm");
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        };
-    }
+//    @Bean
+//    CommandLineRunner loadExcelAtStartup(ExcelLoader loader) {
+//        return args -> {
+//            try {
+//                loader.loadExcel("C:\\Users\\Giorgi\\IdeaProjects\\komarovi\\src\\main\\resources\\test.xlsm");
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
+//        };
+//    }
 }

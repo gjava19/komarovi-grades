@@ -1,10 +1,13 @@
 package com.example.komarovi.controller;
 
+import org.springframework.web.bind.annotation.*;
 import com.example.komarovi.dto.StudentGradesDTO;
-import com.example.komarovi.entity.Score;
 import com.example.komarovi.entity.Student;
-import com.example.komarovi.repository.ScoreRepository;
+import com.example.komarovi.entity.TotalScore;
 import com.example.komarovi.repository.StudentRepository;
+import com.example.komarovi.repository.TotalScoreRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -12,53 +15,66 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api")
+@RequiredArgsConstructor
 public class GradeController {
-
     private final StudentRepository studentRepo;
-    private final ScoreRepository scoreRepo;
+    private final TotalScoreRepository totalScoreRepo;
 
-    public GradeController(StudentRepository studentRepo, ScoreRepository scoreRepo) {
-        this.studentRepo = studentRepo;
-        this.scoreRepo = scoreRepo;
-    }
-
+    /**
+     * მოსწავლე ხედავს თავის ქულებს.
+     * GET /api/grades?studentCode=KL96&password=KL96
+     * optional: &assessmentNo=3
+     */
     @GetMapping("/grades")
-    public List<StudentGradesDTO> getGrades(@RequestParam String password) {
-
-        // მოძებნა კოდით (პაროლი == მოსწავლის კოდი)
-        Student st = studentRepo.findByCode(password).orElse(null);
+    public List<StudentGradesDTO> getGrades(
+            @RequestParam String studentCode,
+          //  @RequestParam String password,
+            @RequestParam(required = false) Integer assessmentNo
+    ) {
+        Student st = studentRepo.findByStudentCode(studentCode).orElse(null);
         if (st == null) return List.of();
 
-        List<Score> scores = scoreRepo.findByStudent(st);
+//        // BCrypt შედარება
+//        if (!BCrypt.checkpw(password, st.getPasswordHash())) {
+//            return List.of();
+//        }
 
-        // ჯგუფირება საგნის კოდით
-        Map<String, List<Score>> grouped = scores.stream()
-                .collect(Collectors.groupingBy(Score::getSubjectCode));
+        // ყველა TotalScore ამ მოსწავლისთვის (ყველა upload/exam)
+        List<TotalScore> totals = totalScoreRepo.findAllByStudentIdOrderByUpload_UploadedAtDesc(st.getId());
 
-        List<StudentGradesDTO> result = new ArrayList<>();
-
-        for (var entry : grouped.entrySet()) {
-
-            String subjectCode = entry.getKey();
-            List<Score> subjectScores = entry.getValue();
-
-            StudentGradesDTO dto = new StudentGradesDTO();
-
-            dto.studentCode = st.getCode();
-            dto.subjectCode = subjectCode;
-            dto.subject = subjectScores.get(0).getSubject();
-            dto.totalScore = subjectScores.get(0).getTotalScore(); // Excel totalScore
-
-            Map<String, Double> tasks = new LinkedHashMap<>();
-            for (Score sc : subjectScores) {
-                tasks.put(sc.getTaskName(), sc.getScore());
-            }
-            dto.tasks = tasks;
-
-            result.add(dto);
+        // თუ assessmentNo მიუთითა — გაფილტრე
+        if (assessmentNo != null) {
+            totals = totals.stream()
+                    .filter(ts -> ts.getUpload() != null && Objects.equals(ts.getUpload().getAssessmentNo(), assessmentNo))
+                    .toList();
         }
 
-        return result;
+        // DTO-ებად გარდაქმნა
+        return totals.stream().map(ts -> {
+            StudentGradesDTO dto = new StudentGradesDTO();
+
+            dto.studentCode = st.getStudentCode();
+
+            dto.assessmentNo = ts.getUpload() != null ? ts.getUpload().getAssessmentNo() : null;
+            dto.uploadedAt   = ts.getUpload() != null ? ts.getUpload().getUploadedAt() : null;
+            dto.fileName     = ts.getUpload() != null ? ts.getUpload().getOriginalName() : null;
+
+            dto.subjectName = ts.getSubjectName();
+            dto.subjectCode = ts.getSubjectCode();
+            dto.totalPoints = ts.getTotalPoints();
+
+            // tasks -> Map<taskNo, points> (ნომრით დალაგებული)
+            dto.tasks = ts.getTasks().stream()
+                    .sorted(Comparator.comparingInt(t -> t.getTaskNumber() == null ? 0 : t.getTaskNumber()))
+                    .collect(Collectors.toMap(
+                            t -> t.getTaskNumber(),
+                            t -> t.getTaskPoints(),
+                            (a, b) -> a,
+                            LinkedHashMap::new
+                    ));
+
+            return dto;
+        }).toList();
     }
 
 }
