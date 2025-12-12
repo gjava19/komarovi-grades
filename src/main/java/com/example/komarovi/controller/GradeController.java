@@ -1,5 +1,7 @@
 package com.example.komarovi.controller;
 
+import com.example.komarovi.repository.UploadRepository;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.example.komarovi.dto.StudentGradesDTO;
 import com.example.komarovi.entity.Student;
@@ -19,7 +21,7 @@ import java.util.stream.Collectors;
 public class GradeController {
     private final StudentRepository studentRepo;
     private final TotalScoreRepository totalScoreRepo;
-
+    private final UploadRepository uploadRepository;
     /**
      * მოსწავლე ხედავს თავის ქულებს.
      * GET /api/grades?studentCode=KL96&password=KL96
@@ -76,6 +78,11 @@ public class GradeController {
             return dto;
         }).toList();
     }
-
+    @GetMapping("/max-assessment")
+    public ResponseEntity<Map<String, Integer>> getMaxAssessment() {
+        Integer max = uploadRepository.findMaxAssessmentNo();
+        if (max == null) max = 1; // თუ ჯერ არაფერია ატვირთული
+        return ResponseEntity.ok(Map.of("assessmentNo", max));
+    }
 }
 

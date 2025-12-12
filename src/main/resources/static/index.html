@@ -1,85 +1,48 @@
 <!DOCTYPE html>
 <html lang="ka">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <title>მოსწავლის ქულები</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            padding: 30px;
-            background: #eef2f3;
-        }
-        h2 {
-            color: #333;
-            margin-bottom: 20px;
-        }
+        body { font-family: Arial, sans-serif; padding: 30px; background: #eef2f3; }
+        h2 { color: #333; margin-bottom: 20px; }
+
         .box {
-            background: #fff;
-            padding: 20px;
-            border-radius: 10px;
-            width: 350px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.08);
+            background:#fff; padding:20px; border-radius:10px; width:420px;
+            box-shadow:0 0 15px rgba(0,0,0,0.08);
         }
+
+        label { display:block; margin-top:12px; color:#333; font-weight:600; }
         input {
-            width: 100%;
-            padding: 10px;
-            margin-top: 12px;
-            border-radius: 6px;
-            border: 1px solid #bbb;
-            font-size: 15px;
+            width:100%; padding:10px; margin-top:8px; border-radius:6px;
+            border:1px solid #bbb; font-size:15px;
         }
+
         button {
-            width: 100%;
-            margin-top: 20px;
-            padding: 12px;
-            background-color: #0077cc;
-            color: white;
-            border: none;
-            font-size: 16px;
-            font-weight: bold;
-            border-radius: 6px;
-            cursor: pointer;
+            width:100%; margin-top:18px; padding:12px; background:#0077cc; color:#fff;
+            border:none; font-size:16px; font-weight:bold; border-radius:6px; cursor:pointer;
         }
-        button:hover {
-            background-color: #005fa3;
+        button:hover { background:#005fa3; }
+        button:disabled { opacity:0.7; cursor:not-allowed; }
+
+        .hint { margin-top: 6px; font-size: 13px; color:#666; }
+        .error { margin-top: 20px; color: red; font-size: 16px; }
+        .loading { margin-top: 20px; font-size: 16px; color: #0077cc; }
+
+        .card {
+            margin-top:25px; padding:15px; background:white; border-radius:10px;
+            box-shadow:0 2px 6px rgba(0,0,0,0.1);
         }
-        table {
-            margin-top: 25px;
-            width: 100%;
-            border-collapse: collapse;
-            background-color: white;
-        }
-        table, th, td {
-            border: 1px solid #ccc;
-            padding: 10px;
-            font-size: 15px;
-        }
-        th {
-            background: #0077cc;
-            color: white;
-            text-align: left;
-        }
-        .score-high {
-            background: #c8f7c5;
-            font-weight: bold;
-        }
-        .score-mid {
-            background: #ffe5b4;
-            font-weight: bold;
-        }
-        .score-low {
-            background: #ffb3b3;
-            font-weight: bold;
-        }
-        .error {
-            margin-top: 20px;
-            color: red;
-            font-size: 16px;
-        }
-        .loading {
-            margin-top: 20px;
-            font-size: 16px;
-            color: #0077cc;
+        .meta { margin: 6px 0 0 0; color:#222; }
+
+        table { margin-top: 12px; width: 100%; border-collapse: collapse; background:#fff; }
+        table, th, td { border:1px solid #ccc; padding:10px; font-size:15px; }
+        th { background:#0077cc; color:#fff; text-align:left; }
+
+        .toprow { display:flex; gap:18px; flex-wrap:wrap; margin-top:6px; }
+        .pill {
+            display:inline-block; padding:6px 10px; border-radius:999px;
+            background:#f2f6ff; border:1px solid #d8e4ff; font-size:13px;
         }
     </style>
 </head>
@@ -88,70 +51,163 @@
 <h2>მოსწავლის ქულების ნახვა</h2>
 
 <div class="box">
-    <label>პაროლი (მოსწავლის კოდი):</label>
-    <input id="password" placeholder="მაგ: KL96">
+    <label>მოსწავლის კოდი (studentCode):</label>
+    <input id="studentCode" placeholder="მაგ: KL96" />
 
-    <button onclick="loadGrades()">ქულების ნახვა</button>
+    <label>ნაშრომის ნომერი (assessmentNo):</label>
+    <input id="assessmentNo" type="number" min="1" placeholder="იტვირთება..." />
+    <div class="hint">დეფაულტად ივსება ბოლო ატვირთული ნაშრომით (MAX assessmentNo). სურვილისამებრ შეცვალე.</div>
+
+    <button id="btn" onclick="loadGrades()">ქულების ნახვა</button>
 </div>
 
 <div id="result"></div>
 
 <script>
+    // თუ გვერდს ხსნი Spring-იდან: http://localhost:8080/index.html -> API_BASE=""
+    // თუ გვერდს ხსნი IntelliJ Live Server-იდან (63342) -> API_BASE="http://localhost:8080"
+    const API_BASE = (location.port === "8080") ? "" : "http://localhost:8080";
+
+    const resultEl = document.getElementById("result");
+    const studentCodeEl = document.getElementById("studentCode");
+    const assessmentNoEl = document.getElementById("assessmentNo");
+    const btnEl = document.getElementById("btn");
+
+    window.addEventListener("DOMContentLoaded", async () => {
+        await fillDefaultAssessmentNo();
+    });
+
+    async function fillDefaultAssessmentNo() {
+        try {
+            const resp = await fetch(`${API_BASE}/api/max-assessment`, { method: "GET" });
+
+            if (!resp.ok) {
+                assessmentNoEl.placeholder = "ჩაწერე ხელით (max ვერ მოიძებნა)";
+                return;
+            }
+
+            const text = await resp.text();
+            let maxNo = null;
+
+            // JSON: {"assessmentNo":12} ან {"max":12}
+            try {
+                const json = JSON.parse(text);
+                maxNo = json.assessmentNo ?? json.max ?? json.value ?? null;
+            } catch {
+                // plain number: 12
+                const n = Number(text);
+                maxNo = Number.isFinite(n) ? n : null;
+            }
+
+            if (maxNo != null) assessmentNoEl.value = String(maxNo);
+            else assessmentNoEl.placeholder = "ჩაწერე ხელით";
+        } catch (e) {
+            assessmentNoEl.placeholder = "ჩაწერე ხელით (max ვერ ჩაიტვირთა)";
+        }
+    }
+
     async function loadGrades() {
-        const pw = document.getElementById("password").value.trim();
-        const result = document.getElementById("result");
-        result.innerHTML = "";
+        const studentCode = studentCodeEl.value.trim();
+        const assessmentNoRaw = assessmentNoEl.value.trim();
 
-        if (!pw) {
-            result.innerHTML = `<p class="error">გთხოვთ შეიყვანოთ პაროლი.</p>`;
+        resultEl.innerHTML = "";
+
+        if (!studentCode) {
+            resultEl.innerHTML = `<p class="error">გთხოვთ შეიყვანოთ მოსწავლის კოდი (studentCode).</p>`;
             return;
         }
 
-        result.innerHTML = `<p class="loading">იტვირთება...</p>`;
+        const params = new URLSearchParams();
+        params.set("studentCode", studentCode);
+        if (assessmentNoRaw !== "") params.set("assessmentNo", assessmentNoRaw);
 
-        const response = await fetch(`http://localhost:8080/api/grades?password=${encodeURIComponent(pw)}`);
+        btnEl.disabled = true;
+        resultEl.innerHTML = `<p class="loading">იტვირთება...</p>`;
 
-        if (!response.ok) {
-            result.innerHTML = `<p class="error">სერვერის შეცდომა (${response.status}).</p>`;
-            return;
-        }
+        try {
+            const response = await fetch(`${API_BASE}/api/grades?${params.toString()}`);
 
-        const data = await response.json();
+            if (!response.ok) {
+                resultEl.innerHTML = `<p class="error">სერვერის შეცდომა (${response.status}).</p>`;
+                return;
+            }
 
-        if (!data || !Array.isArray(data) || data.length === 0) {
-            result.innerHTML = `<p class="error">მონაცემები ვერ მოიძებნა. შეამოწმეთ პაროლი.</p>`;
-            return;
-        }
+            const data = await response.json();
 
+            if (!Array.isArray(data) || data.length === 0) {
+                resultEl.innerHTML = `<p class="error">მონაცემები ვერ მოიძებნა. შეამოწმეთ studentCode / assessmentNo.</p>`;
+                return;
+            }
 
-
-        let html = "";
-
-        for (let subject of data) {
-
-            html += `
-        <div style="margin-top:25px; padding:15px; background:white; border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,0.1)">
-
-            <h3>ნაშრომი: ${subject.subject} | ნაშრომის კოდი: ${subject.subjectCode}</h3>
-            <p><b>მოსწავლის კოდი:</b> ${subject.studentCode}</p>
-
-            <table border="1" cellpadding="8" style="width:100%; margin-top:10px; border-collapse: collapse;">
-                <tr>
-                    <th>ჯამური ქულა</th>
-                    ${Object.keys(subject.tasks).map(t => `<th>${t}</th>`).join("")}
-                </tr>
-                <tr>
-                    <td>${subject.totalScore}</td>
-                    ${Object.values(subject.tasks).map(t => `<td>${t}</td>`).join("")}
-                </tr>
-            </table>
+            // header info (ერთნაირი იქნება ყველა ელემენტზე)
+            const head = data[0];
+            const headerHtml = `
+        <div class="card">
+          <div class="toprow">
+            <span class="pill"><b>მოსწავლის კოდი:</b> ${escapeHtml(head.studentCode ?? "")}</span>
+            <span class="pill"><b>ნაშრომის №:</b> ${escapeHtml(String(head.assessmentNo ?? ""))}</span>
+            <span class="pill"><b>ფაილი:</b> ${escapeHtml(head.fileName ?? "")}</span>
+            <span class="pill"><b>ატვირთულია:</b> ${escapeHtml(formatDate(head.uploadedAt))}</span>
+          </div>
         </div>
-    `;
+      `;
+
+            let html = headerHtml;
+
+            for (const item of data) {
+                // ✅ სწორ ველებზე მიბმა
+                const subjectName = item.subjectName ?? "";
+                const subjectCode = item.subjectCode ?? "";
+                const totalPoints = item.totalPoints ?? "";
+
+                // tasks sorted by numeric key: 1,2,3...
+                const tasksObj = item.tasks ?? {};
+                const taskEntries = Object.entries(tasksObj)
+                    .sort((a, b) => Number(a[0]) - Number(b[0])); // ["1",3], ["2",3] ...
+
+                const taskHeader = taskEntries.map(([k]) => `<th>${escapeHtml(k)}</th>`).join("");
+                const taskValues = taskEntries.map(([,v]) => `<td>${escapeHtml(String(v ?? ""))}</td>`).join("");
+
+                html += `
+          <div class="card">
+            <h3>საგანი: ${escapeHtml(subjectName)} | კოდი: ${escapeHtml(subjectCode)}</h3>
+
+            <table>
+              <tr>
+                <th>ჯამური ქულა</th>
+                ${taskHeader}
+              </tr>
+              <tr>
+                <td>${escapeHtml(String(totalPoints))}</td>
+                ${taskValues}
+              </tr>
+            </table>
+          </div>
+        `;
+            }
+
+            resultEl.innerHTML = html;
+
+        } catch (err) {
+            resultEl.innerHTML = `<p class="error">კავშირის შეცდომა. (შეიძლება CORS/URL იყოს) ნახე Console (F12).</p>`;
+        } finally {
+            btnEl.disabled = false;
         }
+    }
 
-        result.innerHTML = html;
+    function formatDate(iso) {
+        if (!iso) return "";
+        // უბრალოდ ლამაზად რომ გამოიტანოს
+        return String(iso).replace("T", " ").split(".")[0];
+    }
 
-
+    function escapeHtml(str) {
+        return String(str)
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#039;");
     }
 </script>
 

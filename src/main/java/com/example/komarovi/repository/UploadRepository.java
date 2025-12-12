@@ -2,6 +2,7 @@ package com.example.komarovi.repository;
 
 import com.example.komarovi.entity.Upload;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -35,5 +36,8 @@ public interface UploadRepository extends JpaRepository<Upload, Long> {
             Integer assessmentNo, LocalDateTime from, LocalDateTime to
     );
     boolean existsByAssessmentNo(Integer assessmentNo);
+
+    @Query("select max(u.assessmentNo) from Upload u")
+    Integer findMaxAssessmentNo();
 
 }
