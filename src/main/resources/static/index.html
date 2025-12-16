@@ -66,7 +66,8 @@
 <script>
     // თუ გვერდს ხსნი Spring-იდან: http://localhost:8080/index.html -> API_BASE=""
     // თუ გვერდს ხსნი IntelliJ Live Server-იდან (63342) -> API_BASE="http://localhost:8080"
-    const API_BASE = (location.port === "8080") ? "" : "http://localhost:8080";
+    // Production & Spring static: same domain → use relative "/api"
+    const API_BASE = "/api";
 
     const resultEl = document.getElementById("result");
     const studentCodeEl = document.getElementById("studentCode");
@@ -79,7 +80,7 @@
 
     async function fillDefaultAssessmentNo() {
         try {
-            const resp = await fetch(`${API_BASE}/api/max-assessment`, { method: "GET" });
+            const resp = await fetch(`${API_BASE}/max-assessment`, { method: "GET" });
 
             if (!resp.ok) {
                 assessmentNoEl.placeholder = "ჩაწერე ხელით (max ვერ მოიძებნა)";
@@ -125,7 +126,7 @@
         resultEl.innerHTML = `<p class="loading">იტვირთება...</p>`;
 
         try {
-            const response = await fetch(`${API_BASE}/api/grades?${params.toString()}`);
+            const response = await fetch(`${API_BASE}/grades?${params.toString()}`);
 
             if (!response.ok) {
                 resultEl.innerHTML = `<p class="error">სერვერის შეცდომა (${response.status}).</p>`;
