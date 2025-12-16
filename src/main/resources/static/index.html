@@ -48,17 +48,17 @@
 </head>
 <body>
 
-<h2>მოსწავლის ქულების ნახვა</h2>
+<h2>კომაროვის სკოლის ფიზიკისა და მათემატიკის ქვიზების შედეგები</h2>
 
 <div class="box">
-    <label>მოსწავლის კოდი (studentCode):</label>
-    <input id="studentCode" placeholder="მაგ: KL96" />
+    <label>ჩაწერეთ მოსწავლის კოდი</label>
+    <input id="studentCode" placeholder="მაგ: AA00" />
 
-    <label>ნაშრომის ნომერი (assessmentNo):</label>
+    <label>ქვიზის ნომერი</label>
     <input id="assessmentNo" type="number" min="1" placeholder="იტვირთება..." />
-    <div class="hint">დეფაულტად ივსება ბოლო ატვირთული ნაშრომით (MAX assessmentNo). სურვილისამებრ შეცვალე.</div>
+    <div class="hint">ქვიზის ნომრის ველში ნომრის ცვლილებით თქვენ შეძლებთ გასული ქვიზების შედეგების ნახვას. თუ ამ ველს შეუვსებელს დატოვებთ, ერთდროულად გამოგიჩნდებათ მიმდინარე სასწავლო წლის უკვე ჩატარებული ყველა  ქვიზის შედეგი.</div>
 
-    <button id="btn" onclick="loadGrades()">ქულების ნახვა</button>
+    <button id="btn" onclick="loadGrades()">შედეგების ნახვა</button>
 </div>
 
 <div id="result"></div>
@@ -114,7 +114,7 @@
         resultEl.innerHTML = "";
 
         if (!studentCode) {
-            resultEl.innerHTML = `<p class="error">გთხოვთ შეიყვანოთ მოსწავლის კოდი (studentCode).</p>`;
+            resultEl.innerHTML = `<p class="error">გთხოვთ შეიყვანოთ მოსწავლის კოდი.</p>`;
             return;
         }
 
@@ -136,24 +136,25 @@
             const data = await response.json();
 
             if (!Array.isArray(data) || data.length === 0) {
-                resultEl.innerHTML = `<p class="error">მონაცემები ვერ მოიძებნა. შეამოწმეთ studentCode / assessmentNo.</p>`;
+                resultEl.innerHTML = `<p class="error">მონაცემები ვერ მოიძებნა. შეამოწმეთ მოსწავლის კოდი / ქვიზის ნომერი.</p>`;
                 return;
             }
 
             // header info (ერთნაირი იქნება ყველა ელემენტზე)
-            const head = data[0];
-            const headerHtml = `
-        <div class="card">
-          <div class="toprow">
-            <span class="pill"><b>მოსწავლის კოდი:</b> ${escapeHtml(head.studentCode ?? "")}</span>
-            <span class="pill"><b>ნაშრომის №:</b> ${escapeHtml(String(head.assessmentNo ?? ""))}</span>
-            <span class="pill"><b>ფაილი:</b> ${escapeHtml(head.fileName ?? "")}</span>
-            <span class="pill"><b>ატვირთულია:</b> ${escapeHtml(formatDate(head.uploadedAt))}</span>
-          </div>
-        </div>
-      `;
+      //       const head = data[0];
+      //       const headerHtml = `
+      //   <div class="card">
+      //     <div class="toprow">
+      //       <span class="pill"><b>მოსწავლის კოდი:</b> ${escapeHtml(head.studentCode ?? "")}</span>
+      //       <span class="pill"><b>ნაშრომის №:</b> ${escapeHtml(String(head.assessmentNo ?? ""))}</span>
+      //       <span class="pill"><b>ფაილი:</b> ${escapeHtml(head.fileName ?? "")}</span>
+      //       <span class="pill"><b>ატვირთულია:</b> ${escapeHtml(formatDate(head.uploadedAt))}</span>
+      //     </div>
+      //   </div>
+      // `;
 
-            let html = headerHtml;
+       //     let html = headerHtml;
+            let html = "";
 
             for (const item of data) {
                 // ✅ სწორ ველებზე მიბმა
@@ -166,12 +167,21 @@
                 const taskEntries = Object.entries(tasksObj)
                     .sort((a, b) => Number(a[0]) - Number(b[0])); // ["1",3], ["2",3] ...
 
-                const taskHeader = taskEntries.map(([k]) => `<th>${escapeHtml(k)}</th>`).join("");
+                const taskHeader = taskEntries.map(([k]) => `<th>ამოცანა N${escapeHtml(k)}-ის ქულა</th>`).join("");
                 const taskValues = taskEntries.map(([,v]) => `<td>${escapeHtml(String(v ?? ""))}</td>`).join("");
+
+                const quizNo = item.assessmentNo ?? "";
+                const studentCode = item.studentCode ?? "";
+                const paperNo = item.subjectCode ?? "";     // შენს JSON-ში F163/M049 აქედან მოდის
 
                 html += `
           <div class="card">
-            <h3>საგანი: ${escapeHtml(subjectName)} | კოდი: ${escapeHtml(subjectCode)}</h3>
+            <h3>
+             საგანი: ${escapeHtml(subjectName)}
+            | ნაშრომის ნომერი: ${escapeHtml(String(paperNo))}
+            | მოსწავლის კოდი: ${escapeHtml(String(studentCode))}
+            | ქვიზი N: ${escapeHtml(String(quizNo))}
+            </h3>
 
             <table>
               <tr>
@@ -190,7 +200,7 @@
             resultEl.innerHTML = html;
 
         } catch (err) {
-            resultEl.innerHTML = `<p class="error">კავშირის შეცდომა. (შეიძლება CORS/URL იყოს) ნახე Console (F12).</p>`;
+            resultEl.innerHTML = `<p class="error">კავშირის შეცდომა.</p>`;
         } finally {
             btnEl.disabled = false;
         }
