@@ -19,8 +19,8 @@ public class TaskScore {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="total_score", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name="total_score_id", nullable = false)
     private TotalScore totalScore;
 
     @Column(name="task_number", nullable = false)
