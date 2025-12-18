@@ -27,9 +27,6 @@ public interface UploadRepository extends JpaRepository<Upload, Long> {
             LocalDateTime to
     );
 
-    @Transactional
-    long deleteByAssessmentNo(Integer assessmentNo);
-
     List<Upload> findAllByOrderByUploadedAtDesc();
 
     List<Upload> findAllByAssessmentNoAndUploadedAtGreaterThanEqualAndUploadedAtLessThanOrderByUploadedAtDesc(
@@ -39,5 +36,7 @@ public interface UploadRepository extends JpaRepository<Upload, Long> {
 
     @Query("select max(u.assessmentNo) from Upload u")
     Integer findMaxAssessmentNo();
+
+    List<Upload> findAllByAssessmentNo(Integer assessmentNo);
 
 }

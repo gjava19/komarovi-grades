@@ -32,10 +32,9 @@ public class UploadAdminController {
             @RequestParam
             @Parameter(example = "9") int assessmentNo
     ) {
-        long deleted = uploadAdminService.deleteByAssessmentNo(assessmentNo);
+         uploadAdminService.deleteByAssessmentNo(assessmentNo);
         return Map.of(
-                "assessmentNo", assessmentNo,
-                "deletedUploads", deleted
+                "assessmentNo", assessmentNo
         );
     }
 

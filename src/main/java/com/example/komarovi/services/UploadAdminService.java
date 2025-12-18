@@ -15,8 +15,9 @@ public class UploadAdminService {
     private final UploadRepository uploadRepo;
 
     @Transactional
-    public long deleteByAssessmentNo(int assessmentNo) {
-        return uploadRepo.deleteByAssessmentNo(assessmentNo);
+    public void deleteByAssessmentNo(int assessmentNo) {
+        List<Upload> uploads = uploadRepo.findAllByAssessmentNo(assessmentNo);
+        uploadRepo.deleteAll(uploads);
     }
 
     @Transactional
