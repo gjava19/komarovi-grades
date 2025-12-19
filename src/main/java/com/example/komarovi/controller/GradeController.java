@@ -81,7 +81,7 @@ public class GradeController {
     @GetMapping("/max-assessment")
     public ResponseEntity<Map<String, Integer>> getMaxAssessment() {
         Integer max = uploadRepository.findMaxAssessmentNo();
-        if (max == null) max = 1; // თუ ჯერ არაფერია ატვირთული
+       // if (max == null) max = 1; // თუ ჯერ არაფერია ატვირთული
         return ResponseEntity.ok(Map.of("assessmentNo", max));
     }
 }
