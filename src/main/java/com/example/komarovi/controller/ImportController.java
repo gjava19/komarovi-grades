@@ -1,6 +1,7 @@
 package com.example.komarovi.controller;
 
 import com.example.komarovi.services.ExcelLoader;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.AllArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,6 +21,13 @@ public class ImportController {
     private final ExcelLoader loader;
 
     @PostMapping(value = "/file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(
+            summary = "Excel ფაილის ატვირთვა",
+            description = """
+    იღებს .xlsx Excel ფაილს, კითხულობს მონაცემებს (მოსწავლეები/ქულები/ატვირთვის ინფორმაცია)
+    და ინახავს ბაზაში. წარმატების შემთხვევაში აბრუნებს ატვირთვის code 200.
+    """
+    )
     public Map<String, Object> upload(@RequestPart("file") MultipartFile file, int assessmentNo) throws Exception {
         if (file.isEmpty()) {
             throw new IllegalArgumentException("File is empty");
