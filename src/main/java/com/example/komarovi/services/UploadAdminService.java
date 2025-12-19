@@ -2,6 +2,8 @@ package com.example.komarovi.services;
 
 import com.example.komarovi.entity.Upload;
 import com.example.komarovi.repository.UploadRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,6 +15,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UploadAdminService {
     private final UploadRepository uploadRepo;
+
+    @PersistenceContext
+    private EntityManager em;
 
     @Transactional
     public void deleteByAssessmentNo(int assessmentNo) {
@@ -46,5 +51,16 @@ public class UploadAdminService {
         return uploadRepo.findAllByAssessmentNoAndUploadedAtGreaterThanEqualAndUploadedAtLessThanOrderByUploadedAtDesc(
                 assessmentNo, from, to
         );
+    }
+    @Transactional
+    public void clearAllTables() {
+
+        em.createNativeQuery("DELETE FROM tasks_score").executeUpdate();
+        em.createNativeQuery("DELETE FROM total_score").executeUpdate();
+        em.createNativeQuery("DELETE FROM uploads").executeUpdate();
+        em.createNativeQuery("DELETE FROM student").executeUpdate();
+        em.createNativeQuery("DELETE FROM class_group").executeUpdate();
+        em.createNativeQuery("DELETE FROM teacher").executeUpdate();
+
     }
 }
