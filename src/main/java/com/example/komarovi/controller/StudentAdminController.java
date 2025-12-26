@@ -1,5 +1,6 @@
 package com.example.komarovi.controller;
 
+import com.example.komarovi.dto.StudentCodeBatchUpdateResult;
 import com.example.komarovi.dto.StudentCodeUpdateRequest;
 import com.example.komarovi.dto.StudentDTO;
 import com.example.komarovi.services.StudentAdminService;
@@ -7,7 +8,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/admin/students")
@@ -31,5 +34,16 @@ public class StudentAdminController {
     public StudentDTO updateStudentCode(@Valid @RequestBody StudentCodeUpdateRequest req) {
         var updated = studentAdminService.updateStudentCode(req.oldCode, req.newCode);
         return StudentDTO.from(updated);
+    }
+    @PostMapping(
+            value = "/code/upload-excel",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @Operation(summary = "Excel-ით studentCode-ების ბეჩ-აფდეითი (oldCode -> newCode)")
+    public StudentCodeBatchUpdateResult uploadExcelAndUpdateCodes(
+            @RequestPart("file") MultipartFile file
+    ) {
+        return studentAdminService.updateStudentCodesFromExcel(file);
     }
 }
