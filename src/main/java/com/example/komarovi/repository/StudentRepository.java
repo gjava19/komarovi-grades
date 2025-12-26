@@ -11,5 +11,8 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
     Optional<Student> findByStudentCode(String studentCode); // ან findByCode თუ ეგ გაქვს entity-ში
     List<Student> findAllByClassGroupId(Long classGroupId);
     boolean existsByStudentCode(String studentCode);
+
+    Optional<Student> findByStudentCodeIgnoreCase(String studentCode);
+    boolean existsByStudentCodeIgnoreCase(String studentCode);
 }
 
