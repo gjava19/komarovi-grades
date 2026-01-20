@@ -59,6 +59,11 @@
     <input id="assessmentNo" type="number" min="1" placeholder="იტვირთება..." />
     <div class="hint">ქვიზის ნომრის ველში ნომრის ცვლილებით თქვენ შეძლებთ გასული ქვიზების შედეგების ნახვას. თუ ამ ველს შეუვსებელს დატოვებთ, ერთდროულად გამოგიჩნდებათ მიმდინარე სასწავლო წლის უკვე ჩატარებული ყველა  ქვიზის შედეგი.</div>
 
+    <label style="display:flex; gap:10px; align-items:center; margin-top:14px; font-weight:500;">
+        <input id="rememberCode" type="checkbox" checked style="width:auto; margin:0;" />
+        დაიმახსოვრე მოსწავლის კოდი
+    </label>
+
     <button id="btn" onclick="loadGrades()">შედეგების ნახვა</button>
 </div>
 
@@ -75,9 +80,18 @@
     const assessmentNoEl = document.getElementById("assessmentNo");
     const btnEl = document.getElementById("btn");
 
+    const rememberCodeEl = document.getElementById("rememberCode");
+    const STORAGE_KEY = "komarovi_saved_student_code";
+
     window.addEventListener("DOMContentLoaded", async () => {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            studentCodeEl.value = saved;
+            rememberCodeEl.checked = true;
+        }
         await fillDefaultAssessmentNo();
     });
+
 
     async function fillDefaultAssessmentNo() {
         try {
@@ -118,6 +132,9 @@
             resultEl.innerHTML = `<p class="error">გთხოვთ შეიყვანოთ მოსწავლის კოდი.</p>`;
             return;
         }
+
+        if (rememberCodeEl.checked) localStorage.setItem(STORAGE_KEY, studentCode);
+        else localStorage.removeItem(STORAGE_KEY);
 
         const params = new URLSearchParams();
         params.set("studentCode", studentCode);
